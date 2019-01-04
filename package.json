@@ -1,0 +1,28 @@
+{
+  "name": "weidex-event-listener-eth",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "WeiDex",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^4.19.1",
+    "eslint-config-prettier": "^2.9.0",
+    "eslint-plugin-prettier": "^2.6.0",
+    "prettier": "^1.8.2"
+  },
+  "dependencies": {
+    "abi-decoder": "^1.2.0",
+    "amqplib": "^0.5.2",
+    "ethereumjs-abi": "^0.6.5",
+    "ethereumjs-util": "^5.2.0",
+    "ioredis": "^4.0.0",
+    "mongoose": "^5.3.2",
+    "web3": "^1.0.0-beta.36",
+    "winston": "^3.1.0"
+  }
+}
