@@ -1,59 +1,39 @@
 const amqp = require('amqplib');
-const queuesNames = require('./queues');
-const { info, debug } = require('./logger');
+const { info } = require('./logger');
+const ethers = require('ethers');
+const { RABBIT_MQ_URL } = require('./config');
 
-module.exports = {
-    init,
-    sendDepositEvent,
-    sendWithdrawEvent,
-    sendDepositWithReferralEvent,
-    sendTakeOrderEvent,
-    sendCancelOrderEvent,
-    sendReferralBalanceEvent,
-};
+class RabbitMQ {
+    constructor(connection, channel, mongo) {
+        this.connection = connection;
+        this.channel = channel;
+        this.mongo = mongo;
+    }
 
-const rabbitMqServer = process.env.MQ_CONNECTION_STRING;
-info(`Message queue is connected via: ${rabbitMqServer}`);
+    static async build(mongo) {
+        info('RabbitMQ initializing.');
+        const connection = await amqp.connect(RABBIT_MQ_URL);
+        const channel = await connection.createChannel();
+        info('RabbitMQ successfully initialized.');
+        return new RabbitMQ(connection, channel, mongo);
+    }
 
-let channel;
+    send(queueName, data) {
+        const dataBytes = ethers.utils.toUtf8Bytes(data);
+        const hash = ethers.utils.keccak256(dataBytes);
 
-async function init() {
-    info('RabbitMQ initializing.');
-    const connection = await amqp.connect(rabbitMqServer);
-    channel = await connection.createChannel();
-    info('RabbitMQ successfully initialized.');
+        this.mongo.save(hash).then(result => {
+            if (result) {
+                this.channel.assertQueue(queueName, {
+                    durable: false,
+                });
+                this.channel.publish('', queueName, new Buffer.from(data), {
+                    contentType: 'json',
+                });
+                info(`Send ${data} to Q ${queueName}`);
+            }
+        });
+    }
 }
 
-function sendDepositEvent(data) {
-    _send(queuesNames.DEPOSIT, data);
-}
-
-function sendWithdrawEvent(data) {
-    _send(queuesNames.WITHDRAW, data);
-}
-
-function sendDepositWithReferralEvent(data) {
-    _send(queuesNames.REFERRAL_DEPOSIT, data);
-}
-
-function sendTakeOrderEvent(data) {
-    _send(queuesNames.TAKE_ORDER, data);
-}
-
-function sendCancelOrderEvent(data) {
-    _send(queuesNames.CANCEL_ORDER, data);
-}
-
-function sendReferralBalanceEvent(data) {
-    _send(queuesNames.REFERRAL_BALANCE, data);
-}
-
-function _send(queueName, data) {
-    channel.assertQueue(queueName, {
-        durable: false,
-    });
-    channel.publish('', queueName, new Buffer(JSON.stringify(data)), {
-        contentType: 'json',
-    });
-    debug(`Send ${data} to Q ${queueName}`);
-}
+module.exports = RabbitMQ;

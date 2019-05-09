@@ -1,13 +1,22 @@
-const rabbitMQ = require('./core/rabbit-mq');
-const listener = require('./core/listener');
+const RabbitMQ = require('./core/rabbit-mq');
+const RedisStorage = require('./core/redis');
+const MongoStorage = require('./core/mongodb');
+const Listener = require('./core/events');
 
 const app = require('http').createServer(handler);
 const port = process.env.PORT || 6000;
 
 async function init() {
-    await rabbitMQ.init();
+    const redis = new RedisStorage();
+
+    const mongo = new MongoStorage();
+
+    const rabbitMq = await RabbitMQ.build(mongo);
+
+    const listener = new Listener(redis, rabbitMq);
+
     listener.init();
-    setInterval(listener.process, 5000);
+
     app.listen(port);
 }
 

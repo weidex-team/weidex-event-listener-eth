@@ -1,16 +1,25 @@
 const mongoose = require('mongoose');
-const mongoUrl = process.env.MONGODB_URI;
+const { MONGODB_URI } = require('./config');
+const { info } = require('./logger');
 
-mongoose.connect(mongoUrl, { useNewUrlParser: true });
-
-const EventSchema = mongoose.Schema(
-    {},
-    {
-        strict: false,
-        versionKey: false,
+class MongoStorage {
+    constructor() {
+        mongoose.connect(MONGODB_URI, { useNewUrlParser: true });
+        this.EventSchema = mongoose.Schema({}, { strict: false, versionKey: false });
+        this.event = mongoose.model('Event', this.EventSchema);
     }
-);
 
-const event = mongoose.model('Event', EventSchema);
+    async save(data) {
+        const result = await this.event.findOne(data, { _id: 0 });
+        if (result === null) {
+            info(`Saved hash: ${data}`);
 
-module.exports = event;
+            this.event.create(data);
+            return true;
+        }
+        info(`Hash already present: ${data}`);
+        return false;
+    }
+}
+
+module.exports = MongoStorage;
