@@ -36,11 +36,20 @@ class Transfer extends BaseEvent {
             topics: [this.contract.interface.events.Transfer.topic],
         };
         const logs = await this.provider.getLogs(filter);
-        const events = logs.map(log =>
-            Object.assign({}, this.interface.parseLog(log), { tx: log.transactionHash })
-        );
 
-        return events;
+        logs.map(log => {
+            const event = this.interface.parseLog(log);
+            const result = JSON.stringify({
+                token: event.values.token,
+                user: event.values.user,
+                beneficiary: event.values.beneficiary,
+                amount: event.values.amount.toString(),
+                userBalance: event.values.userBalance.toString(),
+                beneficiaryBalance: event.values.beneficiaryBalance.toString(),
+                txHash: log.transactionHash,
+            });
+            this.rabbitMQ.send(TRANSFER, result);
+        });
     }
 }
 

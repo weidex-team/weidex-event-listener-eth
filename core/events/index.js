@@ -6,24 +6,30 @@ const Withdraw = require('./withdraw');
 const Cancel = require('./cancel');
 const Trade = require('./trade');
 
+const { info } = require('../logger');
+
 class Events {
     constructor(redis, rabbitMq) {
         this.redis = redis;
-        this.rabbitMq = rabbitMq;
+        this.rabbitMQ = rabbitMq;
         this.events = [Deposit, Withdraw, Cancel, Trade];
     }
 
-    init() {
+    async init() {
         const provider = new Provider().getProvider();
         const _contract = new Contract(provider);
         const contract = _contract.getContract();
         const iface = _contract.getInterface();
+        const lastProcessedBlock = await this.redis.getlastBlock();
+        const currentBlockNumber = await provider.getBlockNumber();
 
-        this.events.forEach(Event => {
-            const e = new Event(contract, provider, iface, this.rabbitMq, this.redis);
+        info(`Past events from ${lastProcessedBlock} to ${currentBlockNumber}`);
 
+        for (const Event of this.events) {
+            const e = new Event(contract, provider, iface, this.rabbitMQ, this.redis);
+            await e.getPast(lastProcessedBlock - 1, currentBlockNumber);
             e.subscribe();
-        });
+        }
     }
 }
 

@@ -53,10 +53,10 @@ class Trade extends BaseEvent {
         };
         const logs = await this.provider.getLogs(filter);
 
-        const events = logs.map(log => {
+        logs.map(log => {
             const event = this.interface.parseLog(log);
             const values = event.values;
-            return {
+            const result = JSON.stringify({
                 makerAddress: values.makerAddress,
                 takerAddress: values.takerAddress,
                 orderHash: values.orderHash,
@@ -66,10 +66,9 @@ class Trade extends BaseEvent {
                 makerFeeReceived: values.makerFeeReceived.toString(),
                 referralFeeReceived: values.referralFeeReceived.toString(),
                 txHash: log.transactionHash,
-            };
+            });
+            this.rabbitMQ.send(TRADE, result);
         });
-
-        return events;
     }
 }
 

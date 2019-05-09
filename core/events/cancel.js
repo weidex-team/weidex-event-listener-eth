@@ -36,18 +36,17 @@ class Cancel extends BaseEvent {
         };
         const logs = await this.provider.getLogs(filter);
 
-        const events = logs.map(log => {
+        logs.map(log => {
             const event = this.interface.parseLog(log);
-            return {
+            const result = JSON.stringify({
                 makerBuyToken: event.values.makerBuyToken,
                 makerSellToken: event.values.makerSellToken,
                 maker: event.values.maker,
                 orderHash: event.values.orderHash,
                 txHash: log.transactionHash,
-            };
+            });
+            this.rabbitMQ.send(CANCEL, result);
         });
-
-        return events;
     }
 }
 

@@ -41,9 +41,9 @@ class Deposit extends BaseEvent {
         };
         const logs = await this.provider.getLogs(filter);
 
-        const events = logs.map(log => {
+        logs.map(log => {
             const event = this.interface.parseLog(log);
-            return {
+            const result = JSON.stringify({
                 token: event.values.token,
                 user: event.values.user,
                 referral: event.values.referral,
@@ -51,10 +51,9 @@ class Deposit extends BaseEvent {
                 amount: event.values.amount.toString(),
                 balance: event.values.balance.toString(),
                 txHash: log.transactionHash,
-            };
+            });
+            this.rabbitMQ.send(DEPOSIT, result);
         });
-
-        return events;
     }
 }
 
