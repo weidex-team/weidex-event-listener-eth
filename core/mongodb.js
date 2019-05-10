@@ -5,20 +5,20 @@ const { info } = require('./logger');
 class MongoStorage {
     constructor() {
         mongoose.connect(MONGODB_URI, { useNewUrlParser: true });
-        this.EventSchema = mongoose.Schema({}, { strict: false, versionKey: false });
-        this.event = mongoose.model('Event', this.EventSchema);
+        this.EventSchema = mongoose.Schema({ hash: { type: String } }, { versionKey: false });
+        this.Event = mongoose.model('Event', this.EventSchema);
+        this.EventSchema.index({ hash: 1 }, { unique: true });
     }
 
-    async save(data) {
-        const result = await this.event.findOne(data, { _id: 0 });
-        if (result === null) {
-            info(`Saved hash: ${data}`);
-
-            this.event.create(data);
+    async save(hash) {
+        try {
+            await this.Event.create({ hash });
+            info(`Saved hash: ${hash}`);
             return true;
+        } catch (err) {
+            info(`Hash already present: ${hash}`);
+            return false;
         }
-        info(`Hash already present: ${data}`);
-        return false;
     }
 }
 

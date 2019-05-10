@@ -30,6 +30,8 @@ class Events {
             await e.getPast(lastProcessedBlock - 1, currentBlockNumber);
             e.subscribe();
         }
+
+        return true;
     }
 }
 

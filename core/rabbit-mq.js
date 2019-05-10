@@ -14,7 +14,6 @@ class RabbitMQ {
         info('RabbitMQ initializing.');
         const connection = await amqp.connect(RABBIT_MQ_URL);
         const channel = await connection.createChannel();
-        info('RabbitMQ successfully initialized.');
         return new RabbitMQ(connection, channel, mongo);
     }
 
